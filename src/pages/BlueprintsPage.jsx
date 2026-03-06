@@ -9,19 +9,21 @@ import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 
 export default function BlueprintsPage() {
   const dispatch = useDispatch()
-  const { byAuthor, current, status } = useSelector((s) => s.blueprints)
+
+  const { byAuthor, current, status, error } = useSelector((s) => s.blueprints)
+
   const [authorInput, setAuthorInput] = useState('')
   const [selectedAuthor, setSelectedAuthor] = useState('')
+
   const items = byAuthor[selectedAuthor] || []
 
   useEffect(() => {
     dispatch(fetchAuthors())
   }, [dispatch])
 
-  const totalPoints = useMemo(
-    () => items.reduce((acc, bp) => acc + (bp.points?.length || 0), 0),
-    [items],
-  )
+  const totalPoints = useMemo(() => {
+    return items.reduce((acc, bp) => acc + (bp.points?.length || 0), 0)
+  }, [items])
 
   const getBlueprints = () => {
     if (!authorInput) return
@@ -38,6 +40,7 @@ export default function BlueprintsPage() {
       <section className="grid" style={{ gap: 16 }}>
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Blueprints</h2>
+
           <div style={{ display: 'flex', gap: 12 }}>
             <input
               className="input"
@@ -45,6 +48,7 @@ export default function BlueprintsPage() {
               value={authorInput}
               onChange={(e) => setAuthorInput(e.target.value)}
             />
+
             <button className="btn primary" onClick={getBlueprints}>
               Get blueprints
             </button>
@@ -55,49 +59,39 @@ export default function BlueprintsPage() {
           <h3 style={{ marginTop: 0 }}>
             {selectedAuthor ? `${selectedAuthor}'s blueprints:` : 'Results'}
           </h3>
+
           {status === 'loading' && <p>Cargando...</p>}
+
+          {error && <p style={{ color: 'red' }}>{error}</p>}
+
           {!items.length && status !== 'loading' && <p>Sin resultados.</p>}
+
           {!!items.length && (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th
-                      style={{
-                        textAlign: 'left',
-                        padding: '8px',
-                        borderBottom: '1px solid #334155',
-                      }}
-                    >
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #334155' }}>
                       Blueprint name
                     </th>
-                    <th
-                      style={{
-                        textAlign: 'right',
-                        padding: '8px',
-                        borderBottom: '1px solid #334155',
-                      }}
-                    >
+                    <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #334155' }}>
                       Number of points
                     </th>
                     <th style={{ padding: '8px', borderBottom: '1px solid #334155' }}></th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {items.map((bp) => (
                     <tr key={bp.name}>
                       <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
                         {bp.name}
                       </td>
-                      <td
-                        style={{
-                          padding: '8px',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #1f2937',
-                        }}
-                      >
+
+                      <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #1f2937' }}>
                         {bp.points?.length || 0}
                       </td>
+
                       <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
                         <button className="btn" onClick={() => openBlueprint(bp)}>
                           Open
@@ -109,12 +103,18 @@ export default function BlueprintsPage() {
               </table>
             </div>
           )}
-          <p style={{ marginTop: 12, fontWeight: 700 }}>Total user points: {totalPoints}</p>
+
+          <p style={{ marginTop: 12, fontWeight: 700 }}>
+            Total user points: {totalPoints}
+          </p>
         </div>
       </section>
 
       <section className="card">
-        <h3 style={{ marginTop: 0 }}>Current blueprint: {current?.name || '—'}</h3>
+        <h3 style={{ marginTop: 0 }}>
+          Current blueprint: {current?.name || '—'}
+        </h3>
+
         <BlueprintCanvas points={current?.points || []} />
       </section>
     </div>
