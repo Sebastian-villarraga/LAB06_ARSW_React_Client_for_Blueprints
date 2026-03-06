@@ -1,32 +1,40 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import api from '../../services/apiClient.js'
+import blueprintsService from '../../services/blueprintsService.js'
 
-export const fetchAuthors = createAsyncThunk('blueprints/fetchAuthors', async () => {
-  const { data } = await api.get('/blueprints')
-  // Expecting API returns array of {author, name, points}
-  const authors = [...new Set(data.map((bp) => bp.author))]
-  return authors
-})
+export const fetchAuthors = createAsyncThunk(
+  'blueprints/fetchAuthors',
+  async () => {
+    const data = await blueprintsService.getAll()
 
-export const fetchByAuthor = createAsyncThunk('blueprints/fetchByAuthor', async (author) => {
-  const { data } = await api.get(`/blueprints/${encodeURIComponent(author)}`)
-  return { author, items: data }
-})
+    // Expecting array of {author, name, points}
+    const authors = [...new Set(data.map((bp) => bp.author))]
+    return authors
+  },
+)
+
+export const fetchByAuthor = createAsyncThunk(
+  'blueprints/fetchByAuthor',
+  async (author) => {
+    const data = await blueprintsService.getByAuthor(author)
+    return { author, items: data }
+  },
+)
 
 export const fetchBlueprint = createAsyncThunk(
   'blueprints/fetchBlueprint',
   async ({ author, name }) => {
-    const { data } = await api.get(
-      `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`,
-    )
+    const data = await blueprintsService.getByAuthorAndName(author, name)
     return data
   },
 )
 
-export const createBlueprint = createAsyncThunk('blueprints/createBlueprint', async (payload) => {
-  const { data } = await api.post('/blueprints', payload)
-  return data
-})
+export const createBlueprint = createAsyncThunk(
+  'blueprints/createBlueprint',
+  async (payload) => {
+    const data = await blueprintsService.create(payload)
+    return data
+  },
+)
 
 const slice = createSlice({
   name: 'blueprints',
@@ -40,26 +48,28 @@ const slice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAuthors.pending, (s) => {
-        s.status = 'loading'
+      .addCase(fetchAuthors.pending, (state) => {
+        state.status = 'loading'
       })
-      .addCase(fetchAuthors.fulfilled, (s, a) => {
-        s.status = 'succeeded'
-        s.authors = a.payload
+      .addCase(fetchAuthors.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.authors = action.payload
       })
-      .addCase(fetchAuthors.rejected, (s, a) => {
-        s.status = 'failed'
-        s.error = a.error.message
+      .addCase(fetchAuthors.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.error.message
       })
-      .addCase(fetchByAuthor.fulfilled, (s, a) => {
-        s.byAuthor[a.payload.author] = a.payload.items
+      .addCase(fetchByAuthor.fulfilled, (state, action) => {
+        state.byAuthor[action.payload.author] = action.payload.items
       })
-      .addCase(fetchBlueprint.fulfilled, (s, a) => {
-        s.current = a.payload
+      .addCase(fetchBlueprint.fulfilled, (state, action) => {
+        state.current = action.payload
       })
-      .addCase(createBlueprint.fulfilled, (s, a) => {
-        const bp = a.payload
-        if (s.byAuthor[bp.author]) s.byAuthor[bp.author].push(bp)
+      .addCase(createBlueprint.fulfilled, (state, action) => {
+        const bp = action.payload
+        if (state.byAuthor[bp.author]) {
+          state.byAuthor[bp.author].push(bp)
+        }
       })
   },
 })
