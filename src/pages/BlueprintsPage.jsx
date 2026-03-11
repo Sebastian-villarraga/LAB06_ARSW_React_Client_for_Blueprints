@@ -1,122 +1,113 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import {
-  fetchAuthors,
-  fetchByAuthor,
-  fetchBlueprint,
-} from '../features/blueprints/blueprintsSlice.js'
-import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import api from '../services/apiClient.js'
+import CreateBlueprintModal from '../components/CreateBlueprintModal.jsx'
 
 export default function BlueprintsPage() {
-  const dispatch = useDispatch()
+  const navigate = useNavigate()
 
-  const { byAuthor, current, status, error } = useSelector((s) => s.blueprints)
+  const [author, setAuthor] = useState('')
+  const [name, setName] = useState('')
+  const [blueprints, setBlueprints] = useState([])
+  const [warning, setWarning] = useState(null)
 
-  const [authorInput, setAuthorInput] = useState('')
-  const [selectedAuthor, setSelectedAuthor] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const items = byAuthor[selectedAuthor] || []
-
-  useEffect(() => {
-    dispatch(fetchAuthors())
-  }, [dispatch])
-
-  const totalPoints = useMemo(() => {
-    return items.reduce((acc, bp) => acc + (bp.points?.length || 0), 0)
-  }, [items])
-
-  const getBlueprints = () => {
-    if (!authorInput) return
-    setSelectedAuthor(authorInput)
-    dispatch(fetchByAuthor(authorInput))
+  const handleSearch = async (e) => {
+    e.preventDefault()
+    setWarning(null)
+    try {
+      let data = []
+      if (author && name) {
+        const res = await api.get(`/v1/blueprints/${author}/${name}`)
+        data = [res.data.data]
+      } else if (author) {
+        const res = await api.get(`/v1/blueprints/${author}`)
+        data = res.data.data
+      }
+      setBlueprints(data)
+      setAuthor('')
+      setName('')
+    } catch (err) {
+      setBlueprints([])
+      setWarning('No se encontraron resultados o hubo un error en la búsqueda.')
+    }
   }
 
-  const openBlueprint = (bp) => {
-    dispatch(fetchBlueprint({ author: bp.author, name: bp.name }))
+  const handleListAll = async () => {
+    setWarning(null)
+    try {
+      const res = await api.get('/v1/blueprints')
+      setBlueprints(res.data.data)
+      setAuthor('')
+      setName('')
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   return (
-    <div className="grid" style={{ gridTemplateColumns: '1.1fr 1.4fr', gap: 24 }}>
-      <section className="grid" style={{ gap: 16 }}>
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>Blueprints</h2>
-
-          <div style={{ display: 'flex', gap: 12 }}>
-            <input
-              className="input"
-              placeholder="Author"
-              value={authorInput}
-              onChange={(e) => setAuthorInput(e.target.value)}
-            />
-
-            <button className="btn primary" onClick={getBlueprints}>
-              Get blueprints
-            </button>
-          </div>
+    <div className="card" style={{ position: 'relative' }}>
+      <h2 style={{ marginTop: 0 }}>Gestión de Blueprints</h2>
+      
+      <form onSubmit={handleSearch} className="grid cols-2" style={{ gap: '16px', marginBottom: '24px' }}>
+        <div>
+          <label>Author</label>
+          <input className="input" value={author} onChange={(e) => setAuthor(e.target.value)} />
         </div>
-
-        <div className="card">
-          <h3 style={{ marginTop: 0 }}>
-            {selectedAuthor ? `${selectedAuthor}'s blueprints:` : 'Results'}
-          </h3>
-
-          {status === 'loading' && <p>Cargando...</p>}
-
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-
-          {!items.length && status !== 'loading' && <p>Sin resultados.</p>}
-
-          {!!items.length && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #334155' }}>
-                      Blueprint name
-                    </th>
-                    <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #334155' }}>
-                      Number of points
-                    </th>
-                    <th style={{ padding: '8px', borderBottom: '1px solid #334155' }}></th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {items.map((bp) => (
-                    <tr key={bp.name}>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
-                        {bp.name}
-                      </td>
-
-                      <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #1f2937' }}>
-                        {bp.points?.length || 0}
-                      </td>
-
-                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
-                        <button className="btn" onClick={() => openBlueprint(bp)}>
-                          Open
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <p style={{ marginTop: 12, fontWeight: 700 }}>
-            Total user points: {totalPoints}
-          </p>
+        <div>
+          <label>Blueprint Name</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-      </section>
+        
+        <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button type="submit" className="btn primary">Search</button>
+          <button type="button" className="btn" onClick={handleListAll}>List All</button>
+          <button type="button" className="btn" style={{ background: '#10b981' }} onClick={() => setIsModalOpen(true)}>
+            + Create New Blueprint
+          </button>
+        </div>
+      </form>
 
-      <section className="card">
-        <h3 style={{ marginTop: 0 }}>
-          Current blueprint: {current?.name || '—'}
-        </h3>
+      {warning && (
+        <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
+          {warning}
+        </div>
+      )}
 
-        <BlueprintCanvas points={current?.points || []} />
-      </section>
+      {blueprints.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #334155' }}>Author</th>
+              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #334155' }}>Blueprint</th>
+              <th style={{ padding: '8px', borderBottom: '1px solid #334155' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {blueprints.map((bp) => (
+              <tr key={`${bp.author}-${bp.name}`}>
+                <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>{bp.author}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>{bp.name}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
+                  <button className="btn" onClick={() => navigate(`/blueprint/${bp.author}/${bp.name}`)}>
+                    Open
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <CreateBlueprintModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          setIsModalOpen(false)
+          handleListAll()
+        }} 
+      />
     </div>
   )
 }
