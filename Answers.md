@@ -71,3 +71,26 @@ Una vez que Redux resuelve la petición HTTP, actualiza el estado global almacen
 El arreglo de puntos (`current?.points`) se pasa como una propiedad (prop) al componente `<BlueprintCanvas points={current?.points || []} />`. Dentro de este componente, un `useEffect` detecta cualquier cambio en los puntos y utiliza la API nativa de HTML5 Canvas (Contexto 2D) para realizar el renderizado.
 
 Primero se iteran los puntos para trazar los segmentos de recta conectados mediante lineTo y stroke. Posteriormente, se vuelve a iterar el arreglo para dibujar un círculo sólido (arc y fill) en cada coordenada exacta, marcando visiblemente cada punto sobre las líneas.
+
+## **Servicios: `ApiMock` y `ApiClient`**
+Se tienen dos implementaciones que respetan estrictamente la misma interfaz (getAll, getByAuthor, getByAuthorAndName, create):
+- `apimock.js`: Retorna datos estáticos desde un arreglo en memoria.
+- `apiClient.js` (Axios): Instancia configurada para comunicarse con el servidor en http://localhost:8080/api.
+
+### **Alternacnia dinámica**
+Para cumplir con el requerimiento de cambiar entre el mock y el API real con una sola línea de código, se tiene un servicio integrador (`blueprintsService.js`) que lee la variable de entorno `VITE_USE_MOCK` desde el archivo .env.
+
+Además, el servicio real (apiReal) se encarga de "desempaquetar" la respuesta del backend (que viene dentro de un `ApiResponseWrapper`), extrayendo .data.data para que la estructura final sea idéntica a la que devuelve el apimock.
+```java
+const service = useMock ? apimock : apiReal
+export default service
+```
+
+### **Configuración `.env`**
+Para alternar los servicios, basta con modificar el archivo .env en la raíz del proyecto React:
+```java
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_USE_MOCK=true  # true usa apimock, false usa apiClient
+```
+
+
