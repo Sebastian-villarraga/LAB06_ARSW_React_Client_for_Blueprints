@@ -7,6 +7,9 @@ Juan Carlos Leal
 Sebastián Villarraga
 
 ## **Inicio. Requerimientos para Empezar**
+Para tener en cuenta, revisar el sigueinte repo:
+
+[ARSW_Lab5_Security (Backend)](https://github.com/JuanLeal1105/ARSW_Lab5_BluePrints_Security)
 ### **CORS Config. ¿Funcionan las Requests a la API desde el front?**
 Por defecto, los navegadores web implementan una medida de seguridad llamada Política del Mismo Origen (Same-Origin Policy). Esta política bloquea las peticiones HTTP realizadas desde un origen (en nuestro caso, el frontend de React ejecutándose en `http://localhost:5173`) hacia un origen distinto (nuestro backend en Spring Boot ejecutándose en `http://localhost:8080`).
 
@@ -21,6 +24,14 @@ public CorsConfigurationSource corsConfigurationSource() {
     // ...
 }
 ```
+
+### **Docker y Backend con SpringBoot**
+Es necesrio para el funcionamiento del front que el backend esté corriendo antes de iniciar cualquier operación con el front y de igual forma la base de datos que se creo de PostgreSQL haciendo uso de docker debe de estar corriendo, de tal forma que para ello se usa el sigueinte comando:
+```bash
+docker compose up -d
+```
+
+Lo anterior funciona debido a que dentro del Backend se tiene un `docker-compose.yml`.
 
 ## **Parte 1. Canvas**
 Para permitir la visualización y futuro dibujo de los planos, se integró un elemento HTML <canvas> encapsulado en su propio componente de React.
@@ -100,4 +111,41 @@ Para mejorar la escalabilidad y la experiencia de usuario (UX), la aplicación f
 - Custom Hooks para API: Se crearon los hooks `usePost` y `useUpdate` para abstraer la lógica de comunicación con Axios, gestionar estados de carga (`isLoading`), y centralizar el manejo de errores HTTP 403 (RBAC - Control de Acceso Basado en Roles).
 - Seguridad UI: Se integró un `LogoutButton` global con renderizado condicional basado en la ruta actual (`useLocation`), permitiendo limpiar el token JWT del `localStorage` de forma segura.
 
+## **Parte 5. Interfaz con React**
+- Estado Global (Redux) en el DOM: Se garantizó que la vista de detalle del plano (nombre, autor y puntos) sea un reflejo estricto del estado global. El componente `BlueprintDetailPage` utiliza el hook `useSelector` para extraer la propiedad current del estado de Redux (`state.blueprints`). Al actualizarse este estado global mediante acciones, el DOM de React reacciona y renderiza el nombre automáticamente, manteniendo una única fuente de la verdad.
+- Cero Manipulación Directa del DOM: Se evitó por completo el uso de anti-patrones en React como `document.getElementById` o `document.querySelector`. Toda la manipulación de la interfaz se realiza a través del estado (`useState`), propiedades (props) y, para el caso específico de la API de HTML5 Canvas, se utilizó el hook `useRef` para mantener una referencia segura y acoplada al ciclo de vida del componente.
 
+## **Sugerencias Implementadas (Obligatorias) 👀**
+### **1. Redux Avanzado**
+- **Estados Loading/Error por Thunk:** El slice de Redux (`blueprintsSlice.js`) se diseñó con estados independientes para las listas (`listStatus`, `listError`) y para los detalles (`detailStatus`, `detailError`). La interfaz de usuario lee estos estados ('idle', 'loading', 'succeeded', 'failed') para renderizar condicionalmente spinners de carga, banners de error o el contenido real, evitando bloqueos en la UI.
+- **Memo Selectors (Top-5):** Se implementó la función createSelector de `@reduxjs/toolkit` para derivar el Top 5 de planos con mayor cantidad de puntos (`selectTop5Blueprints`). Al ser un selector memorizado, esta costosa operación de ordenamiento solo se recalcula si la lista subyacente de planos (`allItems`) sufre alguna mutación, optimizando drásticamente el rendimiento de la aplicación.
+
+### **2. Rutas Protegidas**
+Se implementó un componente envoltorio `<PrivateRoute>` que intercepta la navegación. Este componente verifica la existencia de un token JWT válido en el localStorage. Si el usuario no está autenticado, es redirigido automáticamente a la vista de `/login`. Las rutas de visualización y edición (`/blueprint` y `/blueprint/:author/:name`) están encapsuladas dentro de este componente en el enrutador principal (`App.jsx`).
+
+### **3. CRUD Completo y Actualizaciones Optimistas**
+**Corrección de Endpoints y Seguridad** 
+
+Para lograr un CRUD verdaderamente completo, fue necesario intervenir el backend en Spring Boot. Se crearon los endpoints correspondientes (`@DeleteMapping`) y se implementó la lógica de borrado desde el controlador hasta la capa de persistencia (Tanto en memoria como en PostgreSQL). Además, se actualizaron los permisos (`SecurityConfig`) para garantizar que solo roles autorizados puedan ejecutar operaciones destructivas.
+
+**Optimistic Updates**
+
+Las operaciones de actualización (PUT para añadir puntos) y borrado (DELETE) utilizan Thunks con actualizaciones optimistas. En el extraReducers, cuando la acción está en estado pending, la UI se actualiza inmediatamente (añadiendo el punto al canvas o borrando el plano de la tabla) asumiendo que el servidor responderá exitosamente. Si la promesa es rejected (ej. por falta de permisos 403), el estado ejecuta un "rollback" (revierte el cambio) para mantener la consistencia con la base de datos.
+
+### **4. Dibujo Interactivo**
+El `<svg>` estático fue reemplazado por un componente `<BlueprintCanvas>` interactivo. Utilizando el evento `onClick` sobre el canvas y calculando el `getBoundingClientRect()`, se obtienen las coordenadas exactas X e Y del ratón relativas al lienzo.
+
+Estas coordenadas temporales se pintan instantáneamente en la pantalla para dar retroalimentación visual al usuario. Al hacer clic en el botón "Guardar", se itera sobre estos nuevos puntos y se envían al backend a través del Thunk optimista de Redux para persistirlos definitivamente.
+
+### **5. Errores y Retry (Reintentos)**
+Se implementó un mecanismo de resiliencia en la vista de detalles. Si el Thunk encargado del método GET falla (por ejemplo, si el servidor se cae o hay problemas de red), el componente intercepta el estado `detailStatus === 'failed'` y oculta el canvas. En su lugar, despliega un banner de error acompañado de un botón "Reintentar", el cual vuelve a despachar la acción `fetchBlueprint` sin necesidad de recargar la página completa, como se puede ver a continuación:
+```java
+if (detailStatus === 'failed') return (
+  <div className="card" style={{ background: '#fee2e2', color: '#991b1b' }}>
+    <p>Error: {detailError}</p>
+    <button className="btn" onClick={() => dispatch(fetchBlueprint({ author, name }))}>
+      Reintentar
+    </button>
+  </div>
+)
+```
