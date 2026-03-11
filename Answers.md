@@ -72,7 +72,7 @@ El arreglo de puntos (`current?.points`) se pasa como una propiedad (prop) al co
 
 Primero se iteran los puntos para trazar los segmentos de recta conectados mediante lineTo y stroke. Posteriormente, se vuelve a iterar el arreglo para dibujar un círculo sólido (arc y fill) en cada coordenada exacta, marcando visiblemente cada punto sobre las líneas.
 
-## **Servicios: `ApiMock` y `ApiClient`**
+## **Parte 4. Servicios: `ApiMock` y `ApiClient`**
 Se tienen dos implementaciones que respetan estrictamente la misma interfaz (getAll, getByAuthor, getByAuthorAndName, create):
 - `apimock.js`: Retorna datos estáticos desde un arreglo en memoria.
 - `apiClient.js` (Axios): Instancia configurada para comunicarse con el servidor en http://localhost:8080/api.
@@ -92,5 +92,12 @@ Para alternar los servicios, basta con modificar el archivo .env en la raíz del
 VITE_API_BASE_URL=http://localhost:8080/api
 VITE_USE_MOCK=true  # true usa apimock, false usa apiClient
 ```
+
+## **Evolución Arquitectónica de la Interfaz ❗️**
+Para mejorar la escalabilidad y la experiencia de usuario (UX), la aplicación fue refactorizada hacia una arquitectura basada en componentes modulares, enrutamiento y hooks personalizados:
+- Enrutamiento (React Router DOM): Se implementó `react-router-dom` para separar la lógica en vistas distintas (`/login`, `/blueprint`, `/blueprint/:author/:name`), evitando recargas de página y mejorando la navegación.
+- Gestión de Estado y Formularios (Modales): Las acciones de creación (POST) y actualización (PUT) se extrajeron de las vistas principales y se encapsularon en componentes modulares (`CreateBlueprintModal.jsx`, `UpdateBlueprintModal.jsx`). Esto mantiene la vista de lista y de detalle limpias y enfocadas en la lectura de datos.
+- Custom Hooks para API: Se crearon los hooks `usePost` y `useUpdate` para abstraer la lógica de comunicación con Axios, gestionar estados de carga (`isLoading`), y centralizar el manejo de errores HTTP 403 (RBAC - Control de Acceso Basado en Roles).
+- Seguridad UI: Se integró un `LogoutButton` global con renderizado condicional basado en la ruta actual (`useLocation`), permitiendo limpiar el token JWT del `localStorage` de forma segura.
 
 
