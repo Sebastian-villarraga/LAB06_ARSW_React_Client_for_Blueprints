@@ -11,13 +11,14 @@ export default function App() {
         <h1>ECI - Laboratorio de Blueprints en React</h1>
         <nav>
           <NavLink to="/" end>
-            Blueprints
+            Login
           </NavLink>
-          <NavLink to="/login">Login</NavLink>
+          <NavLink to="/blueprint">Blueprints</NavLink>
         </nav>
       </header>
       <Routes>
-        <Route path="/" element={<BlueprintsPage />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/blueprint" element={<BlueprintsPage />} />
         <Route path="/blueprints/:author/:name" element={<BlueprintDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
