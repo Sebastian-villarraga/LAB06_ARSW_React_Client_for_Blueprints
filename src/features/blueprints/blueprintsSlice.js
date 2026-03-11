@@ -5,8 +5,6 @@ export const fetchAuthors = createAsyncThunk(
   'blueprints/fetchAuthors',
   async () => {
     const data = await blueprintsService.getAll()
-
-    // Expecting array of {author, name, points}
     const authors = [...new Set(data.map((bp) => bp.author))]
     return authors
   },

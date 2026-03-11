@@ -3,31 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/apiClient.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 import UpdateBlueprintModal from '../components/UpdateBlueprintModal.jsx'
+import { fetchBlueprint } from '../features/blueprints/blueprintsSlice.js'
+import { useDispatch, useSelector } from 'react-redux'
 
 export default function BlueprintDetailPage() {
   const { author, name } = useParams()
   const navigate = useNavigate()
-  
-  const [blueprint, setBlueprint] = useState(null)
-  const [error, setError] = useState(null)
+  const dispatch = useDispatch()
+
+  const { current: blueprint, status, error } = useSelector((s) => s.blueprints)
   
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
 
-  const fetchDetails = async () => {
-    try {
-      const res = await api.get(`/v1/blueprints/${author}/${name}`)
-      setBlueprint(res.data.data)
-    } catch (err) {
-      setError('No se pudo cargar el plano.')
-    }
-  }
-
   useEffect(() => {
-    fetchDetails()
-  }, [author, name])
+    dispatch(fetchBlueprint({ author, name }))
+  }, [author, name, dispatch])
 
+  if (status === 'loading') return <p>Loading blueprint details...</p>
   if (error) return <p style={{ color: '#f87171' }}>{error}</p>
-  if (!blueprint) return <p>Loading blueprint details...</p>
+  if (!blueprint) return null
 
   return (
     <div className="card" style={{ position: 'relative' }}>
@@ -41,6 +35,7 @@ export default function BlueprintDetailPage() {
           <p style={{ margin: '4px 0' }}><strong>Author:</strong> {blueprint.author}</p>
           <p style={{ margin: '4px 0' }}><strong>Total Points:</strong> {blueprint.points?.length || 0}</p>
         </div>
+
         <button 
           className="btn" 
           style={{ background: '#f59e0b', height: 'fit-content' }} 
@@ -61,7 +56,7 @@ export default function BlueprintDetailPage() {
         name={name}
         onSuccess={() => {
           setIsUpdateModalOpen(false)
-          fetchDetails()
+          dispatch(fetchBlueprint({ author, name }))
         }}
       />
     </div>
