@@ -7,3 +7,46 @@ Juan Carlos Leal
 Sebastián Villarraga
 
 ## **Inicio. Requerimientos para Empezar**
+### **CORS Config. ¿Funcionan las Requests a la API desde el front?
+Por defecto, los navegadores web implementan una medida de seguridad llamada Política del Mismo Origen (Same-Origin Policy). Esta política bloquea las peticiones HTTP realizadas desde un origen (en nuestro caso, el frontend de React ejecutándose en `http://localhost:5173`) hacia un origen distinto (nuestro backend en Spring Boot ejecutándose en `http://localhost:8080`).
+
+Dado que nuestra arquitectura separa el cliente del servidor, fue estrictamente necesario habilitar y configurar CORS en la clase `SecurityConfig` del backend. Esto le indica al navegador que confíe en las peticiones entrantes desde nuestro frontend, permitiendo además el envío de credenciales y encabezados de autorización (necesarios para los tokens JWT).
+
+```java
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    // Se permite explícitamente el origen del frontend
+    configuration.setAllowedOrigins(List.of("http://localhost:5173")); 
+    // ...
+}
+```
+
+## **Parte 1. Canvas**
+Para permitir la visualización y futuro dibujo de los planos, se integró un elemento HTML <canvas> encapsulado en su propio componente de React.
+- Agregar un lienzo y componente propio: Se tiene el componente `BlueprintCanvas.jsx`, el cual recibe los puntos del plano seleccionado y se encarga de renderizarlos utilizando la API 2D de Canvas. Este componente tiene su propio identificador para facilitar pruebas y referencias.
+- Dimensiones adecuadas: Se definieron las dimensiones por defecto en 520×360 píxeles. Esto asegura que el lienzo tenga un tamaño funcional para visualizar los trazos sin desbordar la pantalla ni romper el diseño en cuadrícula (grid) de la página principal.
+
+Teniendo en cuenta lo anterior se dejó la implementación del canvas en `BlueprintPage.jsx`
+
+## **Parte 2. Listar Planos de un Autor**
+Se implementó un panel de búsqueda y una tabla dinámica para consultar y listar los planos de forma eficiente.
+- Consulta desde el backend (o mock): Se incluyó un campo de texto (<input>) que actualiza el estado local. Al hacer clic en el botón, se despacha una acción asíncrona mediante Redux (fetchByAuthor) que se comunica con el blueprintsService. Este servicio es capaz de alternar dinámicamente entre datos simulados (apimock) y peticiones reales al backend dependiendo de las variables de entorno (VITE_USE_MOCK).
+- Mostrar resultados en una tabla: La respuesta se mapea en una tabla HTML convencional, respetando estrictamente las columnas solicitadas: Nombre del plano, Número de puntos y un botón de acción.
+
+### **Cambio Importante. `blueprintService.js`**
+Por defecto, la librería `axios` envuelve la respuesta HTTP del servidor dentro de un objeto, colocando el cuerpo de la respuesta en la propiedad res.data. Sin embargo, nuestro backend en Spring Boot (`BlueprintsAPIController.java`) también implementa su propio patrón de diseño para las respuestas, envolviendo los datos en la clase ApiResponseWrapper (que contiene statusCode, message y data).
+
+Si no se maneja esto, el frontend intentaría iterar sobre un objeto en lugar del arreglo de planos, causando que la aplicación falle al desactivar los datos falsos (mock).
+
+**La solución:**
+Se actualizó el servicio apiReal para "desempaquetar" la respuesta dos veces accediendo a res.data.data. El primer .data remueve la envoltura de Axios, y el segundo .data extrae los planos reales de la envoltura de nuestro backend.
+```java
+const apiReal = {
+  getAll: async () => {
+    // La petición se hace al endpoint real expuesto por el controlador
+    const res = await api.get("/v1/blueprints") 
+    // Se extrae la propiedad 'data' del ApiResponseWrapper del backend
+    return res.data.data 
+  },
+```
