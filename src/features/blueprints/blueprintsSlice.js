@@ -1,75 +1,96 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, createSelector } from '@reduxjs/toolkit'
 import blueprintsService from '../../services/blueprintsService.js'
 
-export const fetchAuthors = createAsyncThunk(
-  'blueprints/fetchAuthors',
+export const fetchAllBlueprints = createAsyncThunk(
+  'blueprints/fetchAll',
   async () => {
-    const data = await blueprintsService.getAll()
-    const authors = [...new Set(data.map((bp) => bp.author))]
-    return authors
-  },
+    return await blueprintsService.getAll()
+  }
 )
 
 export const fetchByAuthor = createAsyncThunk(
   'blueprints/fetchByAuthor',
   async (author) => {
-    const data = await blueprintsService.getByAuthor(author)
-    return { author, items: data }
-  },
+    return await blueprintsService.getByAuthor(author)
+  }
 )
 
 export const fetchBlueprint = createAsyncThunk(
   'blueprints/fetchBlueprint',
   async ({ author, name }) => {
-    const data = await blueprintsService.getByAuthorAndName(author, name)
-    return data
-  },
-)
-
-export const createBlueprint = createAsyncThunk(
-  'blueprints/createBlueprint',
-  async (payload) => {
-    const data = await blueprintsService.create(payload)
-    return data
-  },
+    return await blueprintsService.getByAuthorAndName(author, name)
+  }
 )
 
 const slice = createSlice({
   name: 'blueprints',
   initialState: {
-    authors: [],
-    byAuthor: {},
+    allItems: [],
+    searchResults: [],
     current: null,
-    status: 'idle',
-    error: null,
+    listStatus: 'idle',
+    listError: null,
+    detailStatus: 'idle',
+    detailError: null,
   },
-  reducers: {},
+  reducers: {
+    showAllInTable: (state) => {
+      state.searchResults = state.allItems;
+    }
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAuthors.pending, (state) => {
-        state.status = 'loading'
+      .addCase(fetchAllBlueprints.pending, (state) => {
+        state.listStatus = 'loading'
+        state.listError = null
       })
-      .addCase(fetchAuthors.fulfilled, (state, action) => {
-        state.status = 'succeeded'
-        state.authors = action.payload
+      .addCase(fetchAllBlueprints.fulfilled, (state, action) => {
+        state.listStatus = 'succeeded'
+        state.allItems = action.payload
       })
-      .addCase(fetchAuthors.rejected, (state, action) => {
-        state.status = 'failed'
-        state.error = action.error.message
+      .addCase(fetchAllBlueprints.rejected, (state, action) => {
+        state.listStatus = 'failed'
+        state.listError = action.error.message || 'Error al obtener planos'
+      })
+
+      .addCase(fetchByAuthor.pending, (state) => {
+        state.listStatus = 'loading'
+        state.listError = null
       })
       .addCase(fetchByAuthor.fulfilled, (state, action) => {
-        state.byAuthor[action.payload.author] = action.payload.items
+        state.listStatus = 'succeeded'
+        state.searchResults = action.payload 
+      })
+      .addCase(fetchByAuthor.rejected, (state, action) => {
+        state.listStatus = 'failed'
+        state.listError = action.error.message || 'Error al buscar por autor'
+      })
+
+      .addCase(fetchBlueprint.pending, (state) => {
+        state.detailStatus = 'loading'
+        state.detailError = null
       })
       .addCase(fetchBlueprint.fulfilled, (state, action) => {
+        state.detailStatus = 'succeeded'
         state.current = action.payload
       })
-      .addCase(createBlueprint.fulfilled, (state, action) => {
-        const bp = action.payload
-        if (state.byAuthor[bp.author]) {
-          state.byAuthor[bp.author].push(bp)
-        }
+      .addCase(fetchBlueprint.rejected, (state, action) => {
+        state.detailStatus = 'failed'
+        state.detailError = action.error.message || 'Error al cargar el detalle'
       })
   },
 })
+
+export const { showAllInTable } = slice.actions;
+
+const selectAllItems = (state) => state.blueprints.allItems;
+export const selectTop5Blueprints = createSelector(
+  [selectAllItems],
+  (items) => {
+    return [...items]
+      .sort((a, b) => (b.points?.length || 0) - (a.points?.length || 0))
+      .slice(0, 5)
+  }
+)
 
 export default slice.reducer
