@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import CreateBlueprintModal from '../components/CreateBlueprintModal.jsx'
-import { fetchAllBlueprints, fetchByAuthor, selectTop5Blueprints, showAllInTable } from '../features/blueprints/blueprintsSlice.js'
 import { useDispatch, useSelector } from 'react-redux'
-import { useEffect } from 'react'
+import { fetchAllBlueprints, fetchByAuthor, selectTop5Blueprints, showAllInTable, deleteBlueprintOptimistic } from '../features/blueprints/blueprintsSlice.js'
+import CreateBlueprintModal from '../components/CreateBlueprintModal.jsx'
 
 export default function BlueprintsPage() {
   const navigate = useNavigate()
@@ -14,18 +13,29 @@ export default function BlueprintsPage() {
 
   const [authorInput, setAuthorInput] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+
   useEffect(() => {
     dispatch(fetchAllBlueprints())
   }, [dispatch])
 
   const handleSearch = (e) => {
     e.preventDefault()
-    if (authorInput) {
-      dispatch(fetchByAuthor(authorInput))
-    }
+    if (authorInput) dispatch(fetchByAuthor(authorInput))
   }
+
   const handleListAll = () => {
     dispatch(showAllInTable())
+  }
+
+  const handleDelete = (author, name) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar el plano ${name}?`)) {
+      dispatch(deleteBlueprintOptimistic({ author, name }))
+        .unwrap()
+        .catch(() => {
+          alert('Error al intentar eliminar. Revisa tus permisos o conexión.')
+          dispatch(fetchAllBlueprints())
+        })
+    }
   }
 
   return (
@@ -36,31 +46,15 @@ export default function BlueprintsPage() {
           <label>Buscar por Autor</label>
           <input className="input" value={authorInput} onChange={(e) => setAuthorInput(e.target.value)} placeholder="Ej: john" />
         </div>
-        
         <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button type="submit" className="btn primary" disabled={listStatus === 'loading'}>
-            Search
-          </button>
-          <button type="button" className="btn" onClick={handleListAll} disabled={listStatus === 'loading'}>
-            List All
-          </button>
-          <button type="button" className="btn" style={{ background: '#10b981' }} onClick={() => setIsModalOpen(true)}>
-            + Create New
-          </button>
+          <button type="submit" className="btn primary" disabled={listStatus === 'loading'}>Search</button>
+          <button type="button" className="btn" onClick={handleListAll} disabled={listStatus === 'loading'}>List All</button>
+          <button type="button" className="btn" style={{ background: '#10b981' }} onClick={() => setIsModalOpen(true)}>+ Create New</button>
         </div>
       </form>
 
-      {listStatus === 'loading' && (
-        <div style={{ padding: '12px', background: '#e0f2fe', color: '#0369a1', borderRadius: '8px', marginBottom: '16px' }}>
-          Cargando planos...
-        </div>
-      )}
-
-      {listError && (
-        <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>
-          Error: {listError}
-        </div>
-      )}
+      {listStatus === 'loading' && <div style={{ padding: '12px', background: '#e0f2fe', color: '#0369a1', borderRadius: '8px', marginBottom: '16px' }}>Cargando planos...</div>}
+      {listError && <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '16px' }}>Error: {listError}</div>}
 
       <div className="grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
         <div>
@@ -79,27 +73,22 @@ export default function BlueprintsPage() {
                   <tr key={`${bp.author}-${bp.name}`}>
                     <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>{bp.author}</td>
                     <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>{bp.name}</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
-                      <button className="btn" onClick={() => navigate(`/blueprint/${bp.author}/${bp.name}`)}>
-                        Open
-                      </button>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #1f2937', display: 'flex', gap: '8px' }}>
+                      <button className="btn" onClick={() => navigate(`/blueprint/${bp.author}/${bp.name}`)}>Open</button>
+                      <button className="btn" style={{ background: '#ef4444' }} onClick={() => handleDelete(bp.author, bp.name)}>Delete</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ) : (
-             listStatus === 'succeeded' && <p>No data to show.</p>
-          )}
+          ) : (listStatus === 'succeeded' && <p>No data to show.</p>)}
         </div>
 
         <div className="card" style={{ background: '#1e293b', padding: '16px' }}>
           <h3 style={{ marginTop: 0, color: '#fbbf24' }}>Top 5 Blueprints</h3>
           <p style={{ fontSize: '12px', color: '#94a3b8' }}>(For point quantity)</p>
-          
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {top5Blueprints.length === 0 && <p style={{ fontSize: '14px' }}>No data.</p>}
-            
             {top5Blueprints.map((bp, index) => (
               <li key={`top-${bp.author}-${bp.name}`} style={{ padding: '8px 0', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between' }}>
                 <span><strong>{index + 1}.</strong> {bp.name}</span>
@@ -109,14 +98,8 @@ export default function BlueprintsPage() {
           </ul>
         </div>
       </div>
-      <CreateBlueprintModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => {
-          setIsModalOpen(false)
-          dispatch(fetchAllBlueprints())
-        }} 
-      />
+
+      <CreateBlueprintModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => { setIsModalOpen(false); dispatch(fetchAllBlueprints()) }} />
     </div>
   )
 }

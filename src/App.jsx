@@ -4,6 +4,7 @@ import BlueprintDetailPage from './pages/BlueprintDetailPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import LogoutButton from './components/LogoutButton.jsx'
+import PrivateRoute from './components/PrivateRoute.jsx'
 
 export default function App() {
   const location = useLocation()
@@ -19,8 +20,8 @@ export default function App() {
       
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/blueprint" element={<BlueprintsPage />} />
-        <Route path="/blueprint/:author/:name" element={<BlueprintDetailPage />} />
+        <Route path="/blueprint" element={<PrivateRoute><BlueprintsPage /></PrivateRoute>} />
+        <Route path="/blueprint/:author/:name" element={<PrivateRoute><BlueprintDetailPage /></PrivateRoute>}/>
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
