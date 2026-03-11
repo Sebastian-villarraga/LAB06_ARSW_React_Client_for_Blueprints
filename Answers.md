@@ -7,7 +7,7 @@ Juan Carlos Leal
 Sebastián Villarraga
 
 ## **Inicio. Requerimientos para Empezar**
-### **CORS Config. ¿Funcionan las Requests a la API desde el front?
+### **CORS Config. ¿Funcionan las Requests a la API desde el front?**
 Por defecto, los navegadores web implementan una medida de seguridad llamada Política del Mismo Origen (Same-Origin Policy). Esta política bloquea las peticiones HTTP realizadas desde un origen (en nuestro caso, el frontend de React ejecutándose en `http://localhost:5173`) hacia un origen distinto (nuestro backend en Spring Boot ejecutándose en `http://localhost:8080`).
 
 Dado que nuestra arquitectura separa el cliente del servidor, fue estrictamente necesario habilitar y configurar CORS en la clase `SecurityConfig` del backend. Esto le indica al navegador que confíe en las peticiones entrantes desde nuestro frontend, permitiendo además el envío de credenciales y encabezados de autorización (necesarios para los tokens JWT).
