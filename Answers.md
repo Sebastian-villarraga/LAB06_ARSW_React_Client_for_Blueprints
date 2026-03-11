@@ -50,3 +50,24 @@ const apiReal = {
     return res.data.data 
   },
 ```
+
+## **Parte 3. Seleccionar un Plano y Graficarlo**
+Para cumplir con este requerimiento, se integró el estado global de la aplicación (Redux) con el componente de renderizado gráfico (`BlueprintCanvas`). El flujo funciona de la siguiente manera:
+**1. Disparador de la acción (Botón Open)**
+
+Al hacer clic en el botón "Open" dentro de la tabla de resultados, se ejecuta una función que despacha la acción `fetchBlueprint`. Esta acción se comunica con el backend (o mock) enviando el autor y el nombre del plano para obtener el detalle completo, incluyendo sus coordenadas (points).
+```java
+const openBlueprint = (bp) => {
+  dispatch(fetchBlueprint({ author: bp.author, name: bp.name }))
+}
+```
+
+**2. Actualización de los Campos de Texto**
+
+Una vez que Redux resuelve la petición HTTP, actualiza el estado global almacenando el plano en la propiedad current. La interfaz reacciona automáticamente a este cambio de estado y actualiza el título en la pantalla, mostrando el nombre del plano seleccionado.
+
+**3. Dibujar segmentos de recta y marcar puntos en el Canvas**
+
+El arreglo de puntos (`current?.points`) se pasa como una propiedad (prop) al componente `<BlueprintCanvas points={current?.points || []} />`. Dentro de este componente, un `useEffect` detecta cualquier cambio en los puntos y utiliza la API nativa de HTML5 Canvas (Contexto 2D) para realizar el renderizado.
+
+Primero se iteran los puntos para trazar los segmentos de recta conectados mediante lineTo y stroke. Posteriormente, se vuelve a iterar el arreglo para dibujar un círculo sólido (arc y fill) en cada coordenada exacta, marcando visiblemente cada punto sobre las líneas.
