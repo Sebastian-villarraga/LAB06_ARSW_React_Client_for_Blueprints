@@ -1,45 +1,40 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import { configureStore, createSlice } from '@reduxjs/toolkit'
+import { BrowserRouter } from 'react-router-dom'
+import * as reactRedux from 'react-redux'
 import BlueprintsPage from '../src/pages/BlueprintsPage.jsx'
+import { fetchByAuthor } from '../src/features/blueprints/blueprintsSlice.js'
 
-// Mock de thunks del slice para no requerir backend
+vi.mock('react-redux', async () => {
+  const actual = await vi.importActual('react-redux')
+  return { ...actual, useDispatch: vi.fn(), useSelector: vi.fn() }
+})
+
 vi.mock('../src/features/blueprints/blueprintsSlice.js', () => ({
-  fetchAuthors: () => ({ type: 'blueprints/fetchAuthors' }),
-  fetchByAuthor: (author) => ({ type: 'blueprints/fetchByAuthor', payload: author }),
-  fetchBlueprint: (payload) => ({ type: 'blueprints/fetchBlueprint', payload }),
+  fetchByAuthor: vi.fn(),
+  fetchAllBlueprints: vi.fn(),
+  selectTop5Blueprints: vi.fn(() => []),
 }))
 
-function makeStore(preloaded) {
-  const slice = createSlice({
-    name: 'blueprints',
-    initialState: {
-      authors: [],
-      byAuthor: {},
-      current: null,
-      status: 'idle',
-      error: null,
-      ...preloaded,
-    },
-    reducers: {},
-  })
-  return configureStore({ reducer: { blueprints: slice.reducer } })
-}
-
 describe('BlueprintsPage', () => {
-  it('despacha fetchByAuthor al hacer click en Get blueprints', () => {
-    const store = makeStore()
-    const spy = vi.spyOn(store, 'dispatch')
-    render(
-      <Provider store={store}>
-        <BlueprintsPage />
-      </Provider>,
+  it('despacha fetchByAuthor al hacer click en Search', () => {
+    const mockDispatch = vi.fn()
+    reactRedux.useDispatch.mockReturnValue(mockDispatch)
+
+    reactRedux.useSelector.mockImplementation((selector) => 
+      selector({ blueprints: { searchResults: [], listStatus: 'idle', listError: null } })
     )
 
-    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'JohnConnor' } })
-    fireEvent.click(screen.getByText(/Get blueprints/i))
+    render(
+      <BrowserRouter>
+        <BlueprintsPage />
+      </BrowserRouter>
+    )
 
-    expect(spy).toHaveBeenCalledWith({ type: 'blueprints/fetchByAuthor', payload: 'JohnConnor' })
+    fireEvent.change(screen.getByPlaceholderText(/Ej: john/i), { target: { value: 'pepo' } })
+    fireEvent.click(screen.getByText(/Search/i))
+
+    expect(mockDispatch).toHaveBeenCalled()
+    expect(fetchByAuthor).toHaveBeenCalledWith('pepo')
   })
 })

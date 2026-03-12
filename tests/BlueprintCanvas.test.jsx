@@ -13,8 +13,10 @@ describe('BlueprintCanvas', () => {
         ]}
       />,
     )
+    
     expect(container.querySelector('canvas')).toBeInTheDocument()
     expect(spy).toHaveBeenCalled()
+    
     spy.mockRestore()
   })
 })

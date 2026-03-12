@@ -45,16 +45,17 @@ export default function CreateBlueprintModal({ isOpen, onClose, onSuccess }) {
         
         <form onSubmit={handleSubmit} className="grid" style={{ gap: '12px' }}>
           <div>
-            <label>Author</label>
-            <input required className="input" value={author} onChange={(e) => setAuthor(e.target.value)} />
+            <label htmlFor="author-input">Author</label>
+            <input id="author-input" required className="input" value={author} onChange={(e) => setAuthor(e.target.value)} />
           </div>
           <div>
-            <label>Name</label>
-            <input required className="input" value={name} onChange={(e) => setName(e.target.value)} />
+            <label htmlFor="name-input">Name</label>
+            <input id="name-input" required className="input" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label>Points (JSON Array)</label>
+            <label htmlFor="points-input">Points (JSON Array)</label>
             <textarea 
+              id="points-input"
               required className="input" rows="4" value={points} 
               onChange={(e) => setPoints(e.target.value)} 
             />
