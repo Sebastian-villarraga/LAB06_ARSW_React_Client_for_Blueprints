@@ -115,6 +115,17 @@ Para mejorar la escalabilidad y la experiencia de usuario (UX), la aplicación f
 - Estado Global (Redux) en el DOM: Se garantizó que la vista de detalle del plano (nombre, autor y puntos) sea un reflejo estricto del estado global. El componente `BlueprintDetailPage` utiliza el hook `useSelector` para extraer la propiedad current del estado de Redux (`state.blueprints`). Al actualizarse este estado global mediante acciones, el DOM de React reacciona y renderiza el nombre automáticamente, manteniendo una única fuente de la verdad.
 - Cero Manipulación Directa del DOM: Se evitó por completo el uso de anti-patrones en React como `document.getElementById` o `document.querySelector`. Toda la manipulación de la interfaz se realiza a través del estado (`useState`), propiedades (props) y, para el caso específico de la API de HTML5 Canvas, se utilizó el hook `useRef` para mantener una referencia segura y acoplada al ciclo de vida del componente.
 
+## **Parte 6. Estilos**
+Para mejorar la experiencia de usuario (UX) y acercar la interfaz al *mock* de referencia, se implementó un sistema de diseño personalizado basado en CSS puro (inspirado en la paleta de colores de Tailwind CSS).
+- **Tema Oscuro (Dark Mode):** Se aplicó un esquema de colores oscuros (`#0f172a`, `#1e293b`) que reduce la fatiga visual y resalta el contraste del `<canvas>` interactivo.
+- **Componentización Visual:** Se crearon clases utilitarias (`.card`, `.btn`, `.input`, `.grid`) para estandarizar tarjetas, botones, formularios y tablas. Esto mantiene el código JSX limpio y evita la dependencia de librerías pesadas como Bootstrap, logrando un diseño moderno, responsivo y ordenado.
+  
+## **Parte 7. Pruebas Unitarias**
+Se configuró un entorno de pruebas moderno utilizando **Vitest**, **React Testing Library** y **jsdom** para simular el comportamiento del navegador. Las pruebas validan el funcionamiento crítico de la interfaz:
+- **Render del Canvas:** (`BlueprintCanvas.test.jsx`) Valida que el elemento `<canvas>` se inyecte correctamente en el DOM y espía (`vi.spyOn`) la ejecución del método `getContext('2d')`, mockeando la API de Canvas de HTML5 para evitar errores en el entorno de Node.js.
+- **Envío de Formularios:** (`CreateBlueprintModal.test.jsx`) Valida que los inputs estén correctamente asociados a sus etiquetas (`htmlFor`) por temas de accesibilidad, simula la escritura del usuario (`fireEvent.change`) y verifica que los datos se reflejen en el DOM del modal.
+- **Interacciones con Redux:** (`BlueprintsPage.test.jsx` y `blueprintsSlice.test.jsx`) Se implementaron pruebas para los reducers puros (verificando transiciones de estado como la acción síncrona `showAllInTable`). Además, se simuló el flujo completo de la interfaz, interceptando el hook `useDispatch` para garantizar que al hacer clic en "Search", el componente despache correctamente el Thunk asíncrono `fetchByAuthor` con el valor exacto del input.
+  
 ## **Sugerencias Implementadas (Obligatorias) 👀**
 ### **1. Redux Avanzado**
 - **Estados Loading/Error por Thunk:** El slice de Redux (`blueprintsSlice.js`) se diseñó con estados independientes para las listas (`listStatus`, `listError`) y para los detalles (`detailStatus`, `detailError`). La interfaz de usuario lee estos estados ('idle', 'loading', 'succeeded', 'failed') para renderizar condicionalmente spinners de carga, banners de error o el contenido real, evitando bloqueos en la UI.
