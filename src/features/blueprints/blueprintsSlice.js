@@ -5,11 +5,9 @@ export const fetchAuthors = createAsyncThunk(
   'blueprints/fetchAuthors',
   async () => {
     const data = await blueprintsService.getAll()
-
-    // Expecting array of {author, name, points}
     const authors = [...new Set(data.map((bp) => bp.author))]
     return authors
-  },
+  }
 )
 
 export const fetchByAuthor = createAsyncThunk(
@@ -17,7 +15,7 @@ export const fetchByAuthor = createAsyncThunk(
   async (author) => {
     const data = await blueprintsService.getByAuthor(author)
     return { author, items: data }
-  },
+  }
 )
 
 export const fetchBlueprint = createAsyncThunk(
@@ -25,7 +23,7 @@ export const fetchBlueprint = createAsyncThunk(
   async ({ author, name }) => {
     const data = await blueprintsService.getByAuthorAndName(author, name)
     return data
-  },
+  }
 )
 
 export const createBlueprint = createAsyncThunk(
@@ -33,7 +31,7 @@ export const createBlueprint = createAsyncThunk(
   async (payload) => {
     const data = await blueprintsService.create(payload)
     return data
-  },
+  }
 )
 
 const slice = createSlice({
@@ -42,36 +40,81 @@ const slice = createSlice({
     authors: [],
     byAuthor: {},
     current: null,
-    status: 'idle',
+    loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    clearError: (state) => {
+      state.error = null
+    },
+  },
   extraReducers: (builder) => {
     builder
+
+      // ---------------- FETCH AUTHORS ----------------
       .addCase(fetchAuthors.pending, (state) => {
-        state.status = 'loading'
+        state.loading = true
+        state.error = null
       })
       .addCase(fetchAuthors.fulfilled, (state, action) => {
-        state.status = 'succeeded'
+        state.loading = false
         state.authors = action.payload
       })
       .addCase(fetchAuthors.rejected, (state, action) => {
-        state.status = 'failed'
+        state.loading = false
         state.error = action.error.message
       })
+
+      // ---------------- FETCH BY AUTHOR ----------------
+      .addCase(fetchByAuthor.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(fetchByAuthor.fulfilled, (state, action) => {
+        state.loading = false
         state.byAuthor[action.payload.author] = action.payload.items
       })
+      .addCase(fetchByAuthor.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message
+      })
+
+      // ---------------- FETCH BLUEPRINT ----------------
+      .addCase(fetchBlueprint.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(fetchBlueprint.fulfilled, (state, action) => {
+        state.loading = false
         state.current = action.payload
       })
+      .addCase(fetchBlueprint.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message
+      })
+
+      // ---------------- CREATE BLUEPRINT ----------------
+      .addCase(createBlueprint.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(createBlueprint.fulfilled, (state, action) => {
+        state.loading = false
         const bp = action.payload
-        if (state.byAuthor[bp.author]) {
-          state.byAuthor[bp.author].push(bp)
+
+        if (!state.byAuthor[bp.author]) {
+          state.byAuthor[bp.author] = []
         }
+
+        state.byAuthor[bp.author].push(bp)
+      })
+      .addCase(createBlueprint.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message
       })
   },
 })
+
+export const { clearError } = slice.actions
 
 export default slice.reducer

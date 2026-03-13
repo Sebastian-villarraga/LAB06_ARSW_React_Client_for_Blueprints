@@ -5,12 +5,15 @@ import {
   fetchByAuthor,
   fetchBlueprint,
 } from '../features/blueprints/blueprintsSlice.js'
+import { selectTopBlueprints } from '../features/blueprints/selectors.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 
 export default function BlueprintsPage() {
   const dispatch = useDispatch()
 
-  const { byAuthor, current, status, error } = useSelector((s) => s.blueprints)
+  const { byAuthor, current, loading, error } = useSelector((s) => s.blueprints)
+
+  const topBlueprints = useSelector(selectTopBlueprints)
 
   const [authorInput, setAuthorInput] = useState('')
   const [selectedAuthor, setSelectedAuthor] = useState('')
@@ -60,11 +63,11 @@ export default function BlueprintsPage() {
             {selectedAuthor ? `${selectedAuthor}'s blueprints:` : 'Results'}
           </h3>
 
-          {status === 'loading' && <p>Cargando...</p>}
+          {loading && <p>Cargando...</p>}
 
           {error && <p style={{ color: 'red' }}>{error}</p>}
 
-          {!items.length && status !== 'loading' && <p>Sin resultados.</p>}
+          {!items.length && !loading && <p>Sin resultados.</p>}
 
           {!!items.length && (
             <div style={{ overflowX: 'auto' }}>
@@ -83,7 +86,7 @@ export default function BlueprintsPage() {
 
                 <tbody>
                   {items.map((bp) => (
-                    <tr key={bp.name}>
+                    <tr key={bp.author + bp.name}>
                       <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
                         {bp.name}
                       </td>
@@ -107,6 +110,23 @@ export default function BlueprintsPage() {
           <p style={{ marginTop: 12, fontWeight: 700 }}>
             Total user points: {totalPoints}
           </p>
+        </div>
+
+        {/* Top 5 Blueprints */}
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Top 5 blueprints by points</h3>
+
+          {!topBlueprints.length && <p>No data yet.</p>}
+
+          {!!topBlueprints.length && (
+            <ul>
+              {topBlueprints.map((bp) => (
+                <li key={bp.author + bp.name}>
+                  {bp.name} ({bp.points.length} points)
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
