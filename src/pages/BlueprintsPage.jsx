@@ -4,12 +4,14 @@ import {
   fetchAuthors,
   fetchByAuthor,
   fetchBlueprint,
-  deleteBlueprint
+  deleteBlueprint,
+  createBlueprint
 } from '../features/blueprints/blueprintsSlice.js'
 import { selectTopBlueprints } from '../features/blueprints/selectors.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
 
 export default function BlueprintsPage() {
+
   const dispatch = useDispatch()
 
   const { byAuthor, current, loading, error } = useSelector((s) => s.blueprints)
@@ -18,6 +20,9 @@ export default function BlueprintsPage() {
 
   const [authorInput, setAuthorInput] = useState('')
   const [selectedAuthor, setSelectedAuthor] = useState('')
+
+  // puntos que el usuario dibuja
+  const [draftPoints, setDraftPoints] = useState([])
 
   const items = byAuthor[selectedAuthor] || []
 
@@ -41,6 +46,35 @@ export default function BlueprintsPage() {
 
   const removeBlueprint = (bp) => {
     dispatch(deleteBlueprint({ author: bp.author, name: bp.name }))
+  }
+
+  // agregar punto al canvas
+  const addPoint = (point) => {
+    setDraftPoints(prev => [...prev, point])
+  }
+
+  // guardar blueprint nuevo
+  const saveBlueprint = () => {
+
+    if (!authorInput) {
+      alert("Enter an author")
+      return
+    }
+
+    if (!draftPoints.length) {
+      alert("Add at least one point")
+      return
+    }
+
+    const name = `blueprint-${Date.now()}`
+
+    dispatch(createBlueprint({
+      author: authorInput,
+      name,
+      points: draftPoints
+    }))
+
+    setDraftPoints([])
   }
 
   return (
@@ -154,7 +188,19 @@ export default function BlueprintsPage() {
           Current blueprint: {current?.name || '—'}
         </h3>
 
-        <BlueprintCanvas points={current?.points || []} />
+        <BlueprintCanvas
+          points={draftPoints.length ? draftPoints : (current?.points || [])}
+          onAddPoint={addPoint}
+        />
+
+        <div style={{ marginTop: 12 }}>
+          <button
+            className="btn primary"
+            onClick={saveBlueprint}
+          >
+            Save blueprint
+          </button>
+        </div>
       </section>
     </div>
   )

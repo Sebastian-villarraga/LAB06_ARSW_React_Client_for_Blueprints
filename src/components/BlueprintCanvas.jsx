@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 
-export default function BlueprintCanvas({ points = [], width = 520, height = 360 }) {
+export default function BlueprintCanvas({
+  points = [],
+  width = 520,
+  height = 360,
+  onAddPoint
+}) {
+
   const ref = useRef(null)
 
   useEffect(() => {
@@ -59,7 +65,21 @@ export default function BlueprintCanvas({ points = [], width = 520, height = 360
       ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
       ctx.fill()
     }
+
   }, [points])
+
+  // 🔥 NUEVO: detectar click en el canvas
+  const handleClick = (e) => {
+
+    if (!onAddPoint) return
+
+    const rect = ref.current.getBoundingClientRect()
+
+    const x = Math.round(e.clientX - rect.left)
+    const y = Math.round(e.clientY - rect.top)
+
+    onAddPoint({ x, y })
+  }
 
   return (
     <canvas
@@ -67,12 +87,14 @@ export default function BlueprintCanvas({ points = [], width = 520, height = 360
       data-testid="blueprint-canvas"
       width={width}
       height={height}
+      onClick={handleClick}
       style={{
         background: '#0b1220',
         border: '1px solid #334155',
         borderRadius: 12,
         width: '100%',
         maxWidth: width,
+        cursor: 'crosshair'
       }}
     />
   )
