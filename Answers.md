@@ -160,3 +160,119 @@ if (detailStatus === 'failed') return (
   </div>
 )
 ```
+
+Se agregó un estado **loading** en el `initialState` del slice para indicar cuándo una operación asincrónica está en ejecución.
+
+```javascript
+initialState: {
+  authors: [],
+  byAuthor: {},
+  current: null,
+  loading: false,
+  error: null,
+}
+```
+<img width="852" height="446" alt="image" src="https://github.com/user-attachments/assets/72ce80a1-3e1a-4173-80ad-2e59caeb4146" />
+
+Se reemplazó status por loading para tener un control más claro del estado de carga.
+
+Se agregó el estado error para almacenar mensajes de error cuando una operación asincrónica falla.
+
+```javascript
+reducers: {
+  clearError: (state) => {
+    state.error = null
+  }
+}
+```
+
+Se implementó el manejo de:
+
+- pending
+- fulfilled
+- rejected
+
+para todos los thunks:
+
+- fetchAuthors
+- fetchByAuthor
+- fetchBlueprint
+- createBlueprint
+<img width="1123" height="419" alt="image" src="https://github.com/user-attachments/assets/ab1a6e15-15c9-496b-9ed4-beb74e1e30b0" />
+
+## Selectors
+
+Se implementaron memo selectors en selectors.js utilizando createSelector de Redux Toolkit para derivar el top-5 de blueprints por número de puntos.
+
+Los selectores agregados fueron:
+
+- selectBlueprintsByAuthor
+- selectAllBlueprints
+- selectTopBlueprints
+
+Protección de rutas
+
+Se implementó un componente PrivateRoute para proteger rutas que requieren autenticación.
+
+La verificación se realiza revisando si existe un token JWT almacenado en localStorage.
+
+- Si el token no está presente, el usuario es redirigido automáticamente a la página /login.
+- Si el token existe, el componente permite acceder a la ruta protegida.
+
+En este laboratorio se protegió la ruta:
+
+Estos permiten calcular el ranking sin recalcular innecesariamente cuando el estado no cambia.
+
+```javascript
+/blueprints/:author/:name
+```
+
+evitando el acceso no autenticado al detalle de los blueprints.
+
+## CRUD
+
+Se implementó la operación DELETE para eliminar blueprints desde la interfaz.
+
+Se añadió un botón "Delete" en la tabla de blueprints que ejecuta el thunk
+deleteBlueprint del slice de Redux.
+
+Este thunk invoca el servicio blueprintsService.delete(...) que realiza una petición HTTP DELETE al backend.
+
+Cuando la operación es exitosa, el reducer actualiza el estado global eliminando el blueprint correspondiente del store.
+<img width="943" height="443" alt="image" src="https://github.com/user-attachments/assets/b80aac76-7086-4d3c-9dbf-5592fb0142a7" />
+
+## Canvas interactivo
+
+Se modificó el componente BlueprintCanvas para permitir interacción del usuario.
+
+Se agregó un evento onClick sobre el elemento canvas que calcula las coordenadas relativas al canvas y las envía al componente padre mediante la función onAddPoint.
+<img width="952" height="441" alt="image" src="https://github.com/user-attachments/assets/c0276140-b12a-4788-9420-c5373e3f3bdb" />
+
+## Manejo de errores y reintento
+
+Se implementó un mecanismo de manejo de errores en la interfaz de usuario.
+
+Cuando ocurre un error en las operaciones de Redux (por ejemplo, si el backend no está disponible), el estado error del slice se actualiza y la interfaz muestra un banner indicando el error.
+
+Además se agregó un botón Retry que permite volver a ejecutar el thunk fetchByAuthor, permitiendo recuperar la operación sin necesidad de recargar la página.
+
+## Testing
+
+Se implementaron pruebas unitarias utilizando Vitest y React Testing Library.
+
+### blueprintsSlice
+
+Se probaron reducers puros verificando:
+
+- Estado inicial
+- Limpieza del error mediante la acción clearError
+
+### BlueprintCanvas
+
+Se probó el render del componente verificando que el elemento canvas se renderice correctamente en el DOM.
+
+Las pruebas se ejecutan mediante:
+
+```javascript
+npm run test
+```
