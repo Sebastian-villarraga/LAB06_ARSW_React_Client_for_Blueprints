@@ -4,6 +4,7 @@ import {
   fetchAuthors,
   fetchByAuthor,
   fetchBlueprint,
+  deleteBlueprint
 } from '../features/blueprints/blueprintsSlice.js'
 import { selectTopBlueprints } from '../features/blueprints/selectors.js'
 import BlueprintCanvas from '../components/BlueprintCanvas.jsx'
@@ -36,6 +37,10 @@ export default function BlueprintsPage() {
 
   const openBlueprint = (bp) => {
     dispatch(fetchBlueprint({ author: bp.author, name: bp.name }))
+  }
+
+  const removeBlueprint = (bp) => {
+    dispatch(deleteBlueprint({ author: bp.author, name: bp.name }))
   }
 
   return (
@@ -77,10 +82,14 @@ export default function BlueprintsPage() {
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #334155' }}>
                       Blueprint name
                     </th>
+
                     <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #334155' }}>
                       Number of points
                     </th>
-                    <th style={{ padding: '8px', borderBottom: '1px solid #334155' }}></th>
+
+                    <th style={{ padding: '8px', borderBottom: '1px solid #334155' }}>
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -95,9 +104,19 @@ export default function BlueprintsPage() {
                         {bp.points?.length || 0}
                       </td>
 
-                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937' }}>
-                        <button className="btn" onClick={() => openBlueprint(bp)}>
+                      <td style={{ padding: '8px', borderBottom: '1px solid #1f2937', display: 'flex', gap: '8px' }}>
+                        <button
+                          className="btn"
+                          onClick={() => openBlueprint(bp)}
+                        >
                           Open
+                        </button>
+
+                        <button
+                          className="btn danger"
+                          onClick={() => removeBlueprint(bp)}
+                        >
+                          Delete
                         </button>
                       </td>
                     </tr>

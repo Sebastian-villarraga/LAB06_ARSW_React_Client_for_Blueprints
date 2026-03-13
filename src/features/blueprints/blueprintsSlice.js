@@ -34,6 +34,15 @@ export const createBlueprint = createAsyncThunk(
   }
 )
 
+// 🔥 NUEVO THUNK
+export const deleteBlueprint = createAsyncThunk(
+  "blueprints/deleteBlueprint",
+  async ({ author, name }) => {
+    await blueprintsService.delete(author, name)
+    return { author, name }
+  }
+)
+
 const slice = createSlice({
   name: 'blueprints',
   initialState: {
@@ -111,6 +120,21 @@ const slice = createSlice({
       .addCase(createBlueprint.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message
+      })
+
+      // 🔥 DELETE BLUEPRINT
+      .addCase(deleteBlueprint.fulfilled, (state, action) => {
+
+        const { author, name } = action.payload
+
+        if (state.byAuthor[author]) {
+          state.byAuthor[author] =
+            state.byAuthor[author].filter(bp => bp.name !== name)
+        }
+
+        if (state.current?.name === name) {
+          state.current = null
+        }
       })
   },
 })

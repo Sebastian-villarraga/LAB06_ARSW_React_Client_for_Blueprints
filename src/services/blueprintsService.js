@@ -22,6 +22,11 @@ const apiReal = {
   create: async (blueprint) => {
     const res = await api.post("/blueprints", blueprint)
     return res.data?.data
+  },
+
+  delete: async (author, name) => {
+    const res = await api.delete(`/blueprints/${author}/${name}`)
+    return res.data?.data
   }
 }
 
